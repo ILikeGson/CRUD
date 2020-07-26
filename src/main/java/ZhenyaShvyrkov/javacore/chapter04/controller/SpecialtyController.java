@@ -1,12 +1,14 @@
 package main.java.ZhenyaShvyrkov.javacore.chapter04.controller;
 
 import main.java.ZhenyaShvyrkov.javacore.chapter04.model.Specialty;
-import main.java.ZhenyaShvyrkov.javacore.chapter04.io.JavaIOSpecialtyRepositoryImpl;
+import main.java.ZhenyaShvyrkov.javacore.chapter04.repository.io.JavaIOSpecialtyRepositoryImpl;
+import main.java.ZhenyaShvyrkov.javacore.chapter04.repository.SpecialtyRepository;
+
 import java.util.List;
 
 public class SpecialtyController {
     private String[] arrayOfSpecialtyNames;
-    private JavaIOSpecialtyRepositoryImpl repository = new JavaIOSpecialtyRepositoryImpl();
+    private SpecialtyRepository repository = new JavaIOSpecialtyRepositoryImpl();
 
     public String[] handleRequest(String request){
         request = request.trim();
@@ -28,13 +30,13 @@ public class SpecialtyController {
     public Specialty update(Long id, String specialtyName){
         return repository.update(id, new Specialty(specialtyName));
     }
-    public String delete(String specialty){
+    public boolean delete(String specialty){
         repository.delete(new Specialty(specialty));
-        return "Successfully deleted";
+        return true;
     }
-    public String delete(Long id){
+    public boolean delete(Long id){
         repository.deleteById(id);
-        return "Successfully deleted";
+        return true;
     }
 
 }

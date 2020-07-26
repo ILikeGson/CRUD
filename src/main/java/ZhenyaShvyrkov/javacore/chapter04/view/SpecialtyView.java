@@ -6,13 +6,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Scanner;
 
 public class SpecialtyView {
     private SpecialtyController spController = new SpecialtyController();
     public void getRequest() {
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+            Scanner scanner = new Scanner(System.in);
             String request;
-            while ((request = reader.readLine()) != null && request.length() != 0) {
+            while ((request = scanner.nextLine()) != null && request.length() != 0) {
                 String[] arrayOfSpecialtyNames = spController.handleRequest(request);
 
                 if (arrayOfSpecialtyNames[0].trim().equals("-c")) {
@@ -34,10 +35,6 @@ public class SpecialtyView {
 
                 } else throw new UnsupportedOperationException("Invalid operation");
             }
-        }catch(IOException e) {e.printStackTrace();}
-    }
-    public void response(String str) {
-        System.out.println(str);
     }
     public void response(List<Specialty> list){
         list.forEach(System.out::println);
@@ -46,6 +43,9 @@ public class SpecialtyView {
         if(specialty != null)
         System.out.println(specialty.toString());
         else System.out.println("Data could not be found");
+    }
+    public boolean response(boolean bool){
+        return bool;
     }
     public boolean isNumber(String str){
         try{
