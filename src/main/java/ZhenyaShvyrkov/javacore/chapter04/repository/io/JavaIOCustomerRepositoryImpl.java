@@ -15,17 +15,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JavaIOCustomerRepositoryImpl implements CustomerRepository {
+    private static JavaIOAccountRepositoryImpl accountRepository = new JavaIOAccountRepositoryImpl();
+    private static JavaIOSpecialtyRepositoryImpl specialtyRepository = new JavaIOSpecialtyRepositoryImpl();
     private static final Path PATH = Paths.get("customers.txt");
     private String customerInfo;
     private long id;
     @Override
     public Customer save(Customer customer) {
         try {
+            accountRepository.save(customer.getAccount());
+            customer.getSpecialties().stream().forEach(specialtyRepository::save);
             id = findMaxId();
             customer.setId(++id);
             String info;
-            if(id == 1) info = id + ": " + customer.toString();
-            else info = "\r\n" + id + ": " + customer.toString() ;
+            if(id == 1) {
+                info = id + ": " + customer.toString();
+            }
+            else {
+                info = "\r\n" + id + ": " + customer.toString() ;
+            }
             Files.write(PATH, info.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             return customer;
         }catch (IOException e) {e.printStackTrace();}
@@ -68,6 +76,43 @@ public class JavaIOCustomerRepositoryImpl implements CustomerRepository {
     public Customer update(Long id, Customer customer) {
         try {
             customerInfo = Files.readString(PATH);
+            Optional<String> line = customerInfo.lines().filter(x -> x.startsWith(id.toString())).findAny();
+            accountRepository.update(id, customer.getAccount());
+            Set<Specialty> oldSpecilties = toSpecialty(line.get());
+            Iterator<Specialty> iterator = customer.getSpecialties().iterator();
+            int count = 0;
+            if(oldSpecilties.size() < customer.getSpecialties().size()){
+                for(Specialty x : oldSpecilties) {
+                    Specialty specialty = iterator.next();
+                    specialty.setId(x.getId());
+                    specialtyRepository.update(x.getId(), specialty);
+                }
+                while (customer.getSpecialties().size() - oldSpecilties.size() - count > 0) {
+                    Specialty specialty = iterator.next();
+                    specialtyRepository.save(specialty);
+                    count++;
+                }
+            }
+            else if(oldSpecilties.size() > customer.getSpecialties().size()){
+                for(Specialty x : oldSpecilties){
+                    if(customer.getSpecialties().size() - count > 0) {
+                        Specialty specialty = iterator.next();
+                        specialty.setId(x.getId());
+                        specialtyRepository.update(x.getId(), specialty);
+
+                    } else {
+                            specialtyRepository.deleteById(x.getId());
+                    }
+                    count++;
+                }
+            }
+            else if(oldSpecilties.size() == customer.getSpecialties().size()){
+                for(Specialty x : oldSpecilties){
+                    Specialty specialty = iterator.next();
+                    specialty.setId(x.getId());
+                    specialtyRepository.update(x.getId(), specialty);
+                }
+            }
             Files.write(PATH, "".getBytes());
             customerInfo = customerInfo.replaceAll( id  + "\\:.+\\s*", id + ": " + customer.toString() + "\n").trim();
             Files.write(PATH, customerInfo.getBytes());
@@ -82,11 +127,16 @@ public class JavaIOCustomerRepositoryImpl implements CustomerRepository {
     public void delete(Customer customer) {
         try {
             customerInfo = Files.readString(PATH);
-            Optional<String> line = customerInfo.lines().filter(str -> str.contains(customer.getAccount().toString())).findAny();
-            if(line.isPresent()){
-                String [] array =  line.get().split("\\:");
-                deleteById(Long.parseLong(array[0].trim()));
-            }
+            Account account = customer.getAccount();
+            accountRepository.delete(account);
+            customer.getSpecialties().stream().forEach(specialtyRepository::delete);
+            Files.write(PATH, "".getBytes());
+            Optional<String> line = customerInfo.lines().filter(x -> x.contains(customer.getAccount().toString()))
+            .map(x -> x.replaceAll("ACTIVE", "DELETED"))
+            .map(x -> x.replaceAll("BANNED", "DELETED"))
+            .map(x-> x.replaceAll("\\[.+\\]", "[]")).findAny();
+            customerInfo = customerInfo.replaceAll("\\d.+" + customer.getAccount().toString() + ".+", line.get());
+            Files.write(PATH, customerInfo.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -95,9 +145,12 @@ public class JavaIOCustomerRepositoryImpl implements CustomerRepository {
 
     public void deleteById(Long id) {
         try {
+            accountRepository.deleteById(id);
             customerInfo = Files.readString(PATH);
             Files.write(PATH, "".getBytes());
             Optional<String> line = customerInfo.lines().filter(str -> str.contains(id.toString() + ": ")).findAny();
+            Set<Specialty> set = toSpecialty(line.get());
+            set.stream().forEach(x -> specialtyRepository.deleteById(x.getId()));
             String newCustomer = line.get().replaceAll("ACTIVE|BANNED", "DELETED").replaceAll("\\[.+\\]","[]");
             customerInfo = customerInfo.replaceAll( id  + "\\:.+", newCustomer).trim();
             Files.write(PATH, customerInfo.getBytes());
@@ -137,10 +190,12 @@ public class JavaIOCustomerRepositoryImpl implements CustomerRepository {
     }
     private static Set<Specialty> toSpecialty(String line){
         Set<Specialty> set = new HashSet<>();
-        line = line.replaceAll(" \\[|\\]","");
+        line = line.replaceAll("(\\[|\\])","");
         String spData [] = line.split(",");
         for(int i = 1; i < spData.length; i++){
-            Specialty specialty = new Specialty(spData[i].trim());
+            long id = Long.parseLong(spData[i].trim());
+            Specialty specialty = specialtyRepository.getByID(id);
+            specialty.setId(id);
             set.add(specialty);
         }
         return set;

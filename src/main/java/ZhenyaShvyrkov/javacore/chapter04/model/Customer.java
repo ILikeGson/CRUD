@@ -39,7 +39,16 @@ public class Customer {
 
     @Override
     public String toString() {
-        String allIn = specialties.stream().map(x -> x.toString()).collect(Collectors.joining(", "));
-        return account.toString() + ", [" + allIn + "]";
+        String idInfo = "";
+        int counter = 1;
+        for(Specialty x : this.getSpecialties()){
+            if(counter == getSpecialties().size()) {
+                idInfo += x.getId();
+            } else {
+                idInfo += x.getId() + ",";
+                counter++;
+            }
+        }
+        return account.toString() + ", [" + idInfo + "]";
     }
 }

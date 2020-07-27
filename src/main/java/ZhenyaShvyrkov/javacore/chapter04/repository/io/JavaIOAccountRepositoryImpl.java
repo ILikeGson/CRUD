@@ -26,8 +26,12 @@ public class JavaIOAccountRepositoryImpl implements AccountRepository {
             id = findMaxId();
             account.setId(++id);
             String info;
-            if(id == 1) info = id + ": " + account.toString();
-            else info = "\r\n" + id + ": " + account.toString() ;
+            if(id == 1) {
+                info = id + ": " + account.toString();
+            }
+            else {
+                info = "\r\n" + id + ": " + account.toString() ;
+            }
             Files.write(PATH, info.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             return account;
         }catch (IOException e) {e.printStackTrace();}

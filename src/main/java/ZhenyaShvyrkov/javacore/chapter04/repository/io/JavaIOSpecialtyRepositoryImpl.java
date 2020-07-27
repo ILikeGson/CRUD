@@ -23,9 +23,12 @@ public class JavaIOSpecialtyRepositoryImpl implements SpecialtyRepository {
             long counter = findMaxId();
             specialty.setId(++counter);
             String info;
-            if(counter == 1) info = specialty.getId() + ": " + specialty.toString();
-            else info = "\r\n" + specialty.getId() + ": " + specialty.toString() ;
-
+            if(counter == 1) {
+                info = specialty.getId() + ": " + specialty.toString();
+            }
+            else {
+                info = "\r\n" + specialty.getId() + ": " + specialty.toString() ;
+            }
             Files.write(PATH, info.getBytes(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             return specialty;
         }catch (IOException e) {e.printStackTrace();}
